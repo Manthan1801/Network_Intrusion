@@ -9,3 +9,6 @@ logs
 notebooks
 Network_intrusion_data
 mlruns/
+evaluate_only.py
+generate_test_data.py
+test_data/

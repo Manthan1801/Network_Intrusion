@@ -20,3 +20,6 @@ lightgbm
 imbalanced-learn
 matplotlib
 seaborn
+shap
+pydantic
+##-e . 

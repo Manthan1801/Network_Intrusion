@@ -7,14 +7,10 @@ from sklearn.ensemble import RandomForestClassifier
 from NetworkIntrusion.exception.exception import NetworkIntrusionException
 from NetworkIntrusion.logging.logger import logging
 from NetworkIntrusion.entity.config_entity import ModelTrainerConfig
-from NetworkIntrusion.entity.artifact_entity import DataTransformationArtifact, ModelTrainerArtifact, ClassificationMetricArtifact
+from NetworkIntrusion.entity.artifact_entity import DataTransformationArtifact, ModelTrainerArtifact
 from NetworkIntrusion.utils.main_utils import save_object
-from sklearn.ensemble import (
-    AdaBoostClassifier,
-    GradientBoostingClassifier,
-)
-# pyrefly: ignore [missing-import]
-from xgboost import XGBClassifier
+from NetworkIntrusion.utils.ml_utils.metric.classification_metrix import get_classification_metric
+
 # pyrefly: ignore [missing-import]
 from lightgbm import LGBMClassifier
 class ModelTrainer:
@@ -22,22 +18,6 @@ class ModelTrainer:
         try:
             self.data_transformation_artifact = data_transformation_artifact
             self.model_trainer_config = model_trainer_config
-        except Exception as e:
-            raise NetworkIntrusionException(e, sys)
-
-    def get_classification_metric(self, y_true, y_pred) -> ClassificationMetricArtifact:
-        try:
-            f1 = f1_score(y_true, y_pred, average="weighted")
-            precision = precision_score(y_true, y_pred, average="weighted")
-            recall = recall_score(y_true, y_pred, average="weighted")
-            accuracy = accuracy_score(y_true, y_pred)
-
-            return ClassificationMetricArtifact(
-                f1_score=f1,
-                precision_score=precision,
-                recall_score=recall,
-                accuracy_score=accuracy
-            )
         except Exception as e:
             raise NetworkIntrusionException(e, sys)
 
@@ -93,7 +73,6 @@ class ModelTrainer:
 
             models = {
                 "Random Forest": RandomForestClassifier(verbose=1,n_jobs=-1),
-                "XGBoost": XGBClassifier(use_label_encoder=False, eval_metric='logloss'),
                 "LightGBM": LGBMClassifier()
             }
 
@@ -102,11 +81,7 @@ class ModelTrainer:
                     'n_estimators': [200, 300, 500],
                     'max_depth': [None, 10, 20]
                 },
-                "XGBoost": {
-                    'n_estimators': [100, 200, 300],
-                    'learning_rate': [0.01, 0.1, 0.3],
-                    'max_depth': [3, 6, 10]
-                },
+            
                 "LightGBM": {
                     'n_estimators': [100, 200, 300],
                     'learning_rate': [0.01, 0.1, 0.3],
@@ -150,10 +125,10 @@ class ModelTrainer:
 
             # Predict to get final metrics
             y_train_pred = best_model.predict(X_train)
-            train_metric = self.get_classification_metric(y_true=y_train, y_pred=y_train_pred)
+            train_metric = get_classification_metric(y_true=y_train, y_pred=y_train_pred)
 
             y_test_pred = best_model.predict(X_test)
-            test_metric = self.get_classification_metric(y_true=y_test, y_pred=y_test_pred)
+            test_metric = get_classification_metric(y_true=y_test, y_pred=y_test_pred)
 
             # Check for overfitting/underfitting
             diff = abs(train_metric.accuracy_score - test_metric.accuracy_score)
