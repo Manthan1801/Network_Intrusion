@@ -10,6 +10,11 @@ from fastapi import FastAPI
 # pyrefly: ignore [missing-import]
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import router
+from db.database import engine, Base
+import db.models
+
+# Create DB tables
+Base.metadata.create_all(bind=engine)
 
 def create_app() -> FastAPI:
     """Creates and configures the FastAPI application."""

@@ -1,13 +1,16 @@
 # pyrefly: ignore [missing-import]
-from fastapi import APIRouter, File, UploadFile, HTTPException
+from fastapi import APIRouter, File, UploadFile, HTTPException, BackgroundTasks
 from datetime import datetime
 import pandas as pd
 import io
 from app.schemas.request_schema import NetworkFlowData
 from app.schemas.response_schema import PredictionResponse, BatchPredictionResponse, HealthResponse
 from app.services.prediction_service import process_single_prediction, process_batch_predictions, MODEL_VERSION
+from live_capture.interface_detector import get_available_interfaces
+from live_capture.nfstream_engine import LiveCaptureEngine
 
 router = APIRouter()
+capture_engine = LiveCaptureEngine()
 
 @router.get("/", response_model=HealthResponse, tags=["System"])
 def health_check():
@@ -26,9 +29,36 @@ def get_model_metadata():
         "model_name": "NetworkIntrusionModel",
         "version": MODEL_VERSION,
         "description": "AI-Powered NIDS for detecting cyber attacks from network flow data.",
-        "author": "Manthan Jikdara ",
+        "author": "Manthan Jikdara",
         "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
     }
+
+@router.get("/interfaces", tags=["Live Monitoring"])
+def get_interfaces():
+    """Returns a list of available network interfaces for live monitoring."""
+    return get_available_interfaces()
+
+@router.post("/monitor/start", tags=["Live Monitoring"])
+def start_monitoring(interface: str):
+    """Starts live packet capture on the specified interface."""
+    if capture_engine.is_running:
+        raise HTTPException(status_code=400, detail="Monitoring is already running.")
+        
+    try:
+        # Pass the process_single_prediction directly as the callback
+        capture_engine.start_capture(interface=interface, callback=process_single_prediction)
+        return {"status": "success", "message": f"Started monitoring interface {interface}."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/monitor/stop", tags=["Live Monitoring"])
+def stop_monitoring():
+    """Stops live packet capture."""
+    if not capture_engine.is_running:
+        return {"status": "success", "message": "Monitoring was not running."}
+        
+    capture_engine.stop_capture()
+    return {"status": "success", "message": "Stopped monitoring."}
 
 @router.post("/predict", response_model=PredictionResponse, tags=["Inference"])
 def predict(data: NetworkFlowData):

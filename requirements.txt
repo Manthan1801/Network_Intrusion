@@ -13,13 +13,16 @@ python-multipart
 s3sync
 boto3
 datasets
-pyarrow
-fastparquet
 xgboost
 lightgbm
-imbalanced-learn
+pyarrow
+fastparquet
 matplotlib
 seaborn
 shap
 pydantic
-##-e . 
+sqlalchemy
+nfstream
+streamlit
+plotly
+psutil
