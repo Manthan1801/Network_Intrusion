@@ -140,3 +140,60 @@ def process_batch_predictions(features_list: list) -> BatchPredictionResponse:
         model_version=MODEL_VERSION,
         timestamp=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
     )
+
+import threading
+import time
+import pandas as pd
+
+_simulation_running = False
+_simulation_thread = None
+
+def _run_simulation():
+    global _simulation_running
+    try:
+        df = pd.read_csv("test_data/batch_req.csv")
+        # Ensure we drop any labels if they exist
+        if 'Label' in df.columns:
+            df = df.drop(columns=['Label'])
+            
+        for _, row in df.iterrows():
+            if not _simulation_running:
+                break
+                
+            features_dict = row.to_dict()
+            
+            # Create dummy meta to make the dashboard look like real traffic
+            meta = {
+                "src_ip": f"192.168.1.{int(time.time()) % 255}",
+                "dst_ip": f"10.0.0.{int(time.time() * 10) % 255}",
+                "src_port": 4444,
+                "dst_port": 80,
+                "protocol": "TCP",
+                "interface": "Simulator"
+            }
+            
+            process_single_prediction(features_dict, meta)
+            time.sleep(0.2)  # Send a packet every 0.2 seconds for a faster visual effect
+            
+    except Exception as e:
+        logging.error(f"Simulation failed: {e}")
+    finally:
+        _simulation_running = False
+
+def start_simulation():
+    global _simulation_running, _simulation_thread
+    if _simulation_running:
+        return {"status": "error", "message": "Simulation is already running."}
+        
+    _simulation_running = True
+    _simulation_thread = threading.Thread(target=_run_simulation, daemon=True)
+    _simulation_thread.start()
+    return {"status": "success", "message": "Demo simulation started."}
+
+def stop_simulation():
+    global _simulation_running
+    if not _simulation_running:
+        return {"status": "error", "message": "Simulation is not running."}
+        
+    _simulation_running = False
+    return {"status": "success", "message": "Demo simulation stopped."}

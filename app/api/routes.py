@@ -5,12 +5,26 @@ import pandas as pd
 import io
 from app.schemas.request_schema import NetworkFlowData
 from app.schemas.response_schema import PredictionResponse, BatchPredictionResponse, HealthResponse
-from app.services.prediction_service import process_single_prediction, process_batch_predictions, MODEL_VERSION
+from app.services.prediction_service import process_single_prediction, process_batch_predictions, start_simulation, stop_simulation
+
+
+
+from app.services.prediction_service import MODEL_VERSION
 from live_capture.interface_detector import get_available_interfaces
 from live_capture.nfstream_engine import LiveCaptureEngine
 
 router = APIRouter()
 capture_engine = LiveCaptureEngine()
+
+@router.post("/simulate/start")
+def start_demo_simulation():
+    """Starts the background demo simulation pushing test CSV data."""
+    return start_simulation()
+
+@router.post("/simulate/stop")
+def stop_demo_simulation():
+    """Stops the background demo simulation."""
+    return stop_simulation()
 
 @router.get("/", response_model=HealthResponse, tags=["System"])
 def health_check():
