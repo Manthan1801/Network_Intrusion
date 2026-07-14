@@ -70,7 +70,7 @@ To see the dashboard spring to life without live network traffic:
 4. Watch the charts dynamically update in real-time as packets are processed!
 
 ##  Author
-**Manthan Jikdara**
+**Manthan Jikadara**
 
 ##  License
 This project is licensed under the terms of the license included in this repository.
